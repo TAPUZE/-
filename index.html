@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תבנית דו"ח ניתוח שיחה AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2c3e50; 
+            --secondary: #3498db; 
+            --accent: #e74c3c; 
+            --light: #ecf0f1; 
+            --dark: #2c3e50; 
+            --success: #2ecc71; 
+            --warning: #f39c12; 
+            --danger: #e74c3c; 
+            --text-primary: #333; 
+            --text-secondary: #7f8c8d; 
+            --bg-main: #f8f9fa; 
+            --bg-white: #FFFFFF;
+            --border-color: #e5e7eb; 
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1); 
+            --radius: 8px; 
+            --radius-lg: 12px; 
+            --transition: all 0.3s ease; 
+        }
+
+        body { 
+            font-family: 'Rubik', 'Arial', sans-serif;
+            direction: rtl; 
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* --- Sidebar --- */
+        #sidebar {
+            background: var(--primary); 
+            color: var(--light); 
+            transition: var(--transition);
+            z-index: 100; 
+            width: 250px; 
+        }
+        #sidebar.hidden-sidebar { transform: translateX(100%); }
+        @media (min-width: 1024px) { /* lg breakpoint */
+            #sidebar.hidden-sidebar { transform: translateX(0); }
+            #main-content { margin-right: 250px;  }
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem; 
+            border-radius: var(--radius);
+            transition: var(--transition);
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8); 
+        }
+        .nav-link i { margin-left: 10px; font-size: 1.1rem; width: 20px; text-align: center; } 
+        .nav-link:hover { color: white; background: rgba(255, 255, 255, 0.1); } 
+        .nav-link.active { color: white; background: var(--secondary) } 
+        .nav-link.active::before { 
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--accent); 
+            border-radius: var(--radius) 0 0 var(--radius);
+        }
+        #sidebar-header { 
+            padding: 0 1.5rem 2rem; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
+            margin-bottom: 1rem; 
+        }
+         #sidebar-header h1 { 
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+        #sidebar-header h1 i { margin-left: 10px; color: var(--secondary); }
+
+
+        /* --- Main Content & Sections --- */
+        #main-header { 
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            background-color: var(--bg-white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+        }
+        #main-header h1 { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        #main-header p { color: var(--text-secondary); }
+
+        .report-section { 
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 1.5rem; 
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+        .report-section:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-3px);
+        }
+        .report-section h2 { 
+            font-size: 1.3rem; 
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1.5rem; 
+            padding-bottom: 1rem; 
+            border-bottom: 1px solid #eee; 
+            display: flex;
+            align-items: center;
+            cursor: pointer; 
+        }
+        .report-section h2 .section-icon { margin-left: 10px; color: var(--secondary); font-size: 1.1em; }
+        .report-section h2 .toggle-icon { margin-right: auto; font-size: 0.8em; color: var(--text-secondary); transition: transform 0.3s ease; }
+        .report-section.collapsed .section-content { display: none; }
+        .report-section.collapsed h2 .toggle-icon { transform: rotate(-90deg); }
+        
+        .report-section h3 { 
+            font-size: 1.1rem; 
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--secondary);
+        }
+        ul { list-style-type: none; padding-right: 0; } 
+        li { 
+            margin-bottom: 0.5rem; 
+            padding-right: 1.5rem; 
+            position: relative;
+            color: var(--text-primary); 
+        }
+        li::before { 
+            content: "•"; 
+            position: absolute;
+            right: 0; 
+            color: var(--primary); 
+            font-weight: bold;
+            font-size: 1.2em;
+            line-height: 1;
+        }
+        .priority-item { 
+            background-color: #EFF6FF; 
+            border-right: 4px solid var(--secondary); 
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: var(--radius);
+        }
+        .priority-item strong { color: var(--secondary); }
+
+        /* --- Buttons --- */
+        .action-button, .gemini-button, .calendar-button { 
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            background: var(--primary);
+            color: white;
+            margin-left: 0.5rem; 
+        }
+        .action-button i, .gemini-button i, .calendar-button i { margin-right: 8px; } 
+        .action-button:hover, .gemini-button:hover, .calendar-button:hover { 
+            background: #34495e; 
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .action-button.secondary { 
+            background: var(--secondary);
+        }
+        .action-button.secondary:hover {
+            background: #2980b9;
+        }
+        .gemini-button {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--success) 100%);
+            font-size: 0.9em;
+            padding: 0.4rem 0.8rem;
+        }
+        .gemini-button:hover {
+            opacity: 0.9;
+        }
+        .gemini-button i {
+             margin-right: 4px;
+        }
+        .calendar-button {
+            background: var(--warning);
+            font-size: 0.9em;
+            padding: 0.4rem 0.8rem;
+        }
+         .calendar-button:hover {
+            background: #d0800c; /* Darker warning */
+        }
+
+
+        /* --- Table --- */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 1.5rem; border: 1px solid #ddd; border-radius: var(--radius); overflow: hidden;}
+        th, td { padding: 1rem; text-align: right; border-bottom: 1px solid #eee; }
+        th { background-color: #f7f7f7; color: var(--primary); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: #f0f5f9; }
+
+        /* --- Hamburger Menu --- */
+        #menu-button { z-index: 110; background-color: var(--primary); }
+        #menu-button:hover { background-color: #34495e; }
+
+        /* --- Modal Styling --- */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--bg-white);
+            margin: auto;
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            direction: rtl; 
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .modal-header h3 {
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .close-button {
+            color: var(--text-secondary);
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .close-button:hover { color: var(--dark); }
+        .modal-body { max-height: 60vh; overflow-y: auto; white-space: pre-wrap; }
+        .modal-footer {
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .loading-indicator {
+            display: none; 
+            text-align: center;
+            padding: 1rem;
+        }
+        .loading-indicator i {
+            font-size: 2rem;
+            color: var(--secondary);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Context Input Area */
+        .input-area textarea, .input-area input[type="password"], .input-area input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+         .input-area textarea { min-height: 150px; }
+
+
+        /* Calendar Suggestion Item */
+        .calendar-suggestion-item {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb; /* Light gray background */
+        }
+        .calendar-suggestion-item h4 {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .calendar-suggestion-item p {
+            font-size: 0.95em;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        .calendar-suggestion-item .calendar-button {
+            margin-top: 0.75rem;
+        }
+
+
+        /* --- Print Styles --- */
+        @media print {
+            body { font-family: 'Rubik', 'Arial', sans-serif !important; background-color: var(--bg-white); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #sidebar, #menu-button, .download-buttons, .gemini-button, .modal, #context-area, #calendar-ai-section .gemini-button, .calendar-button, #api-key-section, #transcription-input-section { display: none !important; }
+            #main-content { margin-right: 0 !important; width: 100% !important; padding: 0 !important; }
+            .report-section { border: 1px solid #ccc !important; box-shadow: none; padding: 1.5rem; margin-bottom: 1rem; page-break-inside: avoid; }
+            #main-header { background: none !important; color: var(--text-primary) !important; text-align: right !important; padding: 1rem 0 !important; box-shadow: none; }
+            #main-header h1 { font-size: 2em !important; }
+            #main-header p { font-size: 1em !important; }
+            .report-section.collapsed .section-content { display: block !important; } 
+            .report-section h2 .toggle-icon { display: none; } 
+            table, th, td { border: 1px solid #999 !important; }
+            th { background-color: #eee !important; }
+            li::before { color: #555 !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <aside id="sidebar" class="hidden-sidebar lg:block fixed top-0 right-0 h-full p-0 shadow-2xl overflow-y-auto">
+            <div id="sidebar-header" class="pt-6">
+                 <h1><i class="fas fa-magnifying-glass-chart"></i>ניתוח שיחה AI</h1>
+            </div>
+            <nav id="report-navigation" class="space-y-1 p-4">
+                <a href="#section-summary" class="nav-link active relative"><i class="fas fa-file-invoice-dollar"></i>סיכום מנהלים</a>
+                <a href="#section-action-items" class="nav-link relative"><i class="fas fa-clipboard-list"></i>משימות ופעולות</a>
+                <a href="#section-product-strategy" class="nav-link relative"><i class="fas fa-lightbulb"></i>אסטרטגיית מוצר</a>
+                <a href="#section-pricing-business-model" class="nav-link relative"><i class="fas fa-tags"></i>תמחור ומודל עסקי</a>
+                <a href="#section-target-audience" class="nav-link relative"><i class="fas fa-bullseye"></i>קהל יעד ושוק</a>
+                <a href="#section-technical-aspects" class="nav-link relative"><i class="fas fa-microchip"></i>היבטים טכניים</a>
+                <a href="#section-collaborations-ext" class="nav-link relative"><i class="fas fa-users"></i>שותפויות וגורמים</a>
+                <a href="#section-key-concerns" class="nav-link relative"><i class="fas fa-shield-alt"></i>חששות וסיכונים</a>
+                <a href="#section-calendar-ai" class="nav-link relative"><i class="fas fa-calendar-check"></i>לוח שנה חכם AI</a>
+                <a href="#section-participants-roles" class="nav-link relative"><i class="fas fa-user-tie"></i>משתתפים ותפקידים</a>
+                <a href="#section-quotes" class="nav-link relative"><i class="fas fa-comment-dots"></i>ציטוטים חשובים</a>
+                <a href="#section-people-mentioned" class="nav-link relative"><i class="fas fa-address-card"></i>אישים וגורמים</a>
+                <a href="#section-ai-notes" class="nav-link relative"><i class="fas fa-brain"></i>הערות AI</a>
+                <a href="#section-context-reeval" class="nav-link relative"><i class="fas fa-edit"></i>הקשר ועדכון AI</a>
+            </nav>
+        </aside>
+
+        <button id="menu-button" class="lg:hidden fixed top-6 right-6 p-3 text-white rounded-md shadow-lg">
+            <i class="fas fa-bars fa-lg"></i>
+        </button>
+
+        <main id="main-content" class="flex-1 p-6 md:p-10 transition-all duration-300 ease-in-out">
+            <div class="container mx-auto">
+                <header id="main-header">
+                    <h1 class="text-3xl md:text-4xl">תבנית דו"ח ניתוח שיחה</h1>
+                    <p class="text-lg mt-1">הזן תמלול שיחה וקבל ניתוח AI מקיף</p>
+                    <p class="text-xs mt-3" id="generation-date">תאריך הפקה: </p>
+                </header>
+
+                <div id="api-key-section" class="report-section input-area">
+                    <h2><i class="fas fa-key section-icon"></i>הגדרות API</h2>
+                    <label for="apiKeyInput" class="block mb-1 font-medium text-sm text-gray-700">מפתח Gemini API:</label>
+                    <input type="password" id="apiKeyInput" placeholder="הזן את מפתח ה-API שלך כאן">
+                    <button onclick="setApiKey()" class="action-button secondary mt-2"><i class="fas fa-save"></i> הגדר מפתח</button>
+                    <p id="apiKeyStatus" class="text-xs mt-1 text-gray-500">סטטוס: לא הוגדר</p>
+                </div>
+
+                <div id="transcription-input-section" class="report-section input-area">
+                    <h2><i class="fas fa-file-audio section-icon"></i>הזנת תמלול שיחה חדש</h2>
+                    <label for="transcriptionInput" class="block mb-1 font-medium text-sm text-gray-700">הדבק כאן את תמלול השיחה המלא:</label>
+                    <textarea id="transcriptionInput" placeholder="הדבק את תמלול השיחה כאן..."></textarea>
+                    <button onclick="processNewCall()" class="action-button mt-2"><i class="fas fa-cogs"></i> נתח שיחה חדשה</button>
+                    <div id="processingStatus" class="mt-3 text-sm"></div>
+                </div>
+
+
+                <div class="download-buttons mb-8 text-left">
+                    <button onclick="downloadCSV()" class="action-button"><i class="fas fa-file-csv"></i>הורד CSV</button>
+                    <button onclick="window.print()" class="action-button secondary"><i class="fas fa-print"></i>הדפס ל-PDF</button>
+                </div>
+
+                <div id="section-summary" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-file-invoice-dollar section-icon"></i>1. סיכום מנהלים ותובנות מפתח<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="mb-3 text-gray-500 italic">הסיכום יופיע כאן לאחר ניתוח התמלול...</p>
+                    </div>
+                </div>
+                
+                <div id="section-action-items" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-clipboard-list section-icon"></i>2. משימות ופעולות נדרשות (Next Steps)<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <h3>לאהרון (פיתוח עסקי ונטוורקינג):</h3>
+                        <ul id="aharon-tasks">
+                            <li class="text-gray-500 italic">משימות לאהרון יופיעו כאן...</li>
+                        </ul>
+                        <h3>לקלמן / צוות פיתוח וניהול:</h3>
+                        <ul id="kalman-dev-tasks">
+                             <li class="text-gray-500 italic">משימות לקלמן/צוות יופיעו כאן...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="section-product-strategy" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-lightbulb section-icon"></i>3. אסטרטגיית מוצר ופיתוח<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="text-gray-500 italic">פרטי אסטרטגיית המוצר יופיעו כאן...</p>
+                    </div>
+                </div>
+                
+                <div id="section-pricing-business-model" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-tags section-icon"></i>4. תמחור ומודל עסקי<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="text-gray-500 italic">פרטי תמחור ומודל עסקי יופיעו כאן...</p>
+                    </div>
+                </div>
+
+                <div id="section-target-audience" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-bullseye section-icon"></i>5. קהל יעד ושוק<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                         <p class="text-gray-500 italic">פרטי קהל יעד ושוק יופיעו כאן...</p>
+                    </div>
+                </div>
+
+                <div id="section-technical-aspects" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-microchip section-icon"></i>6. היבטים טכניים ואתגרים<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="text-gray-500 italic">היבטים טכניים ואתגרים יופיעו כאן...</p>
+                    </div>
+                </div>
+
+                <div id="section-collaborations-ext" class="report-section">
+                     <h2 data-collapsible><i class="fas fa-users section-icon"></i>7. שותפויות וגורמים חיצוניים<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                     <div class="section-content">
+                        <p class="text-gray-500 italic">פרטי שותפויות וגורמים חיצוניים יופיעו כאן...</p>
+                     </div>
+                </div>
+                
+                <div id="section-key-concerns" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-shield-alt section-icon"></i>8. חששות וסיכונים מרכזיים<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <ul id="concerns-list">
+                            <li class="text-gray-500 italic">חששות וסיכונים יופיעו כאן...</li>
+                        </ul>
+                        <button class="gemini-button mt-4" onclick="suggestSolutions()"><i class="fas fa-wand-magic-sparkles"></i> הצע פתרונות לאתגרים</button>
+                    </div>
+                </div>
+
+                 <div id="section-calendar-ai" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-calendar-check section-icon"></i>9. לוח שנה חכם והצעות תזמון AI<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="mb-3 text-gray-600">קבל הצעות מבוססות AI לתזמון פגישות וניהול היומן שלך בהתבסס על ניתוח השיחה.</p>
+                        <button class="gemini-button mt-2" onclick="getCalendarSuggestions()"><i class="fas fa-magic"></i> קבל הצעות תזמון מ-AI</button>
+                        <div id="calendar-suggestions-content" class="mt-4">
+                            <p class="text-gray-500 italic">הצעות ליומן יופיעו כאן...</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="section-participants-roles" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-user-tie section-icon"></i>10. משתתפים ותפקידים בשיחה<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="text-gray-500 italic">פרטי המשתתפים ותפקידיהם יופיעו כאן...</p>
+                    </div>
+                </div>
+
+                <div id="section-quotes" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-comment-dots section-icon"></i>11. ציטוטים חשובים<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="text-gray-500 italic">ציטוטים חשובים יופיעו כאן...</p>
+                    </div>
+                </div>
+
+                <div id="section-people-mentioned" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-address-card section-icon"></i>12. אישים וגורמים שהוזכרו<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <table id="people-mentioned-table">
+                            <thead>
+                                <tr>
+                                    <th>שם/גורם</th>
+                                    <th>תפקיד/הקשר בשיחה</th>
+                                    <th>מידע נוסף/פעולה קשורה</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="3" class="text-gray-500 italic text-center">טבלת אישים וגורמים תופיע כאן...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="section-ai-notes" class="report-section" style="background-color: #FEFCE8; border-color: #FDE047;"> <h2 data-collapsible style="border-bottom-color: #FACC15;"><i class="fas fa-brain section-icon" style="color: #FACC15;"></i>13. הערות AI ואזורים לבירור נוסף<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content">
+                        <p class="text-gray-500 italic">הערות AI ואזורים לבירור יופיעו כאן...</p>
+                    </div>
+                </div>
+
+                <div id="section-context-reeval" class="report-section">
+                    <h2 data-collapsible><i class="fas fa-edit section-icon"></i>14. הוסף הקשר ועדכן ניתוח AI<i class="fas fa-chevron-down toggle-icon"></i></h2>
+                    <div class="section-content input-area" id="context-area">
+                        <p class="mb-3 text-gray-600">הוסף כאן הקשר נוסף או פרטים שהתבררו לאחר השיחה. ה-AI ישתמש במידע זה כדי לנסות ולעדכן את סיכום המנהלים ואת רשימת המשימות.</p>
+                        <textarea id="additionalContextInput" placeholder="לדוגמה: 'הפגישה עם נס מולטימדיה נקבעה ליום שלישי הבא והם מעוניינים בעיקר ביכולות ניהול היומן.'"></textarea>
+                        <button id="reEvaluateButton" class="gemini-button mt-2" onclick="reEvaluateAnalysis()"><i class="fas fa-sync-alt"></i> עדכן סיכום ומשימות עם הקשר חדש</button>
+                        <div id="reevaluation-status" class="mt-3 text-sm"></div>
+                    </div>
+                </div>
+
+
+            </div>
+        </main>
+    </div>
+
+    <div id="geminiResponseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle"></h3>
+                <button class="close-button" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="geminiLoadingIndicator" class="loading-indicator">
+                    <i class="fas fa-spinner"></i>
+                    <p>מעבד בקשה...</p>
+                </div>
+                <div id="geminiResponseContent" class="text-sm" style="white-space: pre-wrap;"></div>
+                <div id="geminiError" class="text-red-500 text-sm" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-button secondary" onclick="closeModal()">סגור</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Global Variables & Initial Setup ---
+        let geminiApiKey = ""; 
+        const advancedAnalysisPrompt = `## Advanced AI Call Transcription Analysis Prompt
+
+**Objective:** To comprehensively analyze any provided call transcription, extract all pertinent information, identify key insights and action items, and present them in a structured, concise, and actionable report.
+
+**Your Role as AI:** You are an advanced AI assistant specializing in deep analysis of call transcriptions. Your goal is to understand not just the explicit content but also the implicit context, relationships, and strategic importance of various discussion points.
+
+**Input:** A raw text transcription of a call.
+
+**Core Instructions for AI:**
+
+1.  **Contextual Understanding First:** Before detailed extraction, try to determine the nature of the call:
+    * Is it an **internal strategy/planning call** (e.g., between partners, team members)?
+    * Is it an **external call with a client/customer** (sales, support, feedback)?
+    * Is it a **call with a potential partner/supplier**?
+    * Or another type?
+    This understanding should subtly guide your interpretation of "Caller Information" vs. "Participant Roles" and the emphasis on certain sections.
+
+2.  **Identify and Synthesize:** Do not merely list every mentioned detail. Synthesize information, group related points, and prioritize what is strategically important. Avoid redundancy across sections.
+
+3.  **Focus on Actionability:** Clearly define next steps and assign them to specific individuals or groups if mentioned or clearly implied.
+
+4.  **Language Nuances:** If the call is in a language other than English, ensure your understanding and summarization accurately reflect the nuances.
+
+**Desired Output Structure & Content (Return as a single JSON object with the following top-level keys):**
+
+Provide your entire response as a single, valid JSON object. The top-level keys should be exactly as follows: "executiveSummary", "actionItems", "productStrategy", "pricingBusinessModel", "targetAudience", "technicalAspects", "collaborationsExternal", "keyConcerns", "participantInfo", "importantQuotes", "peopleMentionedTable", "aiNotes".
+
+Each key should map to an object or string containing the structured information for that section. For lists (like action items, bullet points within sections, table rows), use arrays of strings or arrays of objects within the JSON.
+
+**JSON Structure Details:**
+
+* **"executiveSummary"**: An object with keys: "callType", "mainPurpose", "keyOutcomesAndDecisions" (array of strings), "criticalRoadblocks" (array of strings), "overallSentiment".
+* **"actionItems"**: An object with two keys: "forAharon" (array of objects, each with "taskDescription", "assignedTo", "impliedUrgency", "contextReason") and "forKalmanDev" (array of objects, similar structure).
+* **"productStrategy"**: An object with keys: "productsServicesDiscussed" (array of strings), "coreFunctionalityMVP" (array of strings), "futureDevelopment" (array of strings), "uxUiPoints" (array of strings), "keyStrengthsUSPs" (array of strings), "weaknessesImprovements" (array of strings).
+* **"pricingBusinessModel"**: An object with keys: "pricingTiersProposals" (array of strings), "costConsiderations" (array of strings), "revenueModelStrategy" (array of strings), "financialConcernsTargets" (array of strings).
+* **"targetAudience"**: An object with keys: "targetCustomerProfiles" (array of strings), "marketSegments" (array of strings), "salesGoToMarket" (array of strings), "competitorMentionsPositioning" (array of strings).
+* **"technicalAspects"**: An object with keys: "keyTechnologiesPlatforms" (array of strings), "technicalBlockersChallenges" (array of strings), "integrationPoints" (array of strings), "dataSecurityPrivacy" (array of strings).
+* **"collaborationsExternal"**: An object with keys: "potentialExistingPartners" (array of strings), "externalResourcesFreelancers" (array of strings), "natureOfCollaboration" (array of strings).
+* **"keyConcerns"**: An object with keys: "majorConcernsVoiced" (array of strings), "identifiedRisks" (array of strings), "mitigationStrategies" (array of strings).
+* **"participantInfo"**: An object. If internal: keys like "participant1Name", "participant1Role", "participant2Name", "participant2Role". If external: "companyRepresentatives" (array of objects with name, role), "clientExternalInfo" (object with name, company, role, contact, needs).
+* **"importantQuotes"**: An array of strings (each string being a quote).
+* **"peopleMentionedTable"**: An array of objects, where each object has "nameEntity", "roleContext", "keyInfoAction".
+* **"aiNotes"**: An array of strings.
+
+---
+Example for an action item object: {"taskDescription": "תיאום פגישה עם נס מולטימדיה", "assignedTo": "אהרון", "impliedUrgency": "גבוהה", "contextReason": "בחינת שת\"פ/לקוח"}
+Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext": "איש טכני/מפתח", "keyInfoAction": "אמור לסייע בהפעלת אפליקציית ההקלטות"}
+---
+`;
+
+
+        document.getElementById('generation-date').textContent = 'תאריך הפקה: ' + new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
+        const apiKeyStatusElement = document.getElementById('apiKeyStatus');
+
+        // --- API Key Management ---
+        function setApiKey() {
+            const inputKey = document.getElementById('apiKeyInput').value;
+            if (inputKey && inputKey.trim() !== "") {
+                geminiApiKey = inputKey.trim();
+                localStorage.setItem('geminiReportApiKey', geminiApiKey); // Persist for session
+                apiKeyStatusElement.textContent = "סטטוס: מפתח API הוגדר והוא ישמר לדפדפן זה.";
+                apiKeyStatusElement.className = "text-xs mt-1 text-green-600";
+            } else {
+                localStorage.removeItem('geminiReportApiKey');
+                geminiApiKey = "";
+                apiKeyStatusElement.textContent = "סטטוס: לא הוגדר. הזן מפתח כדי להשתמש בתכונות AI.";
+                apiKeyStatusElement.className = "text-xs mt-1 text-red-500";
+            }
+        }
+        // Load API key from localStorage on page load
+        function loadApiKey() {
+            const storedKey = localStorage.getItem('geminiReportApiKey');
+            if (storedKey) {
+                geminiApiKey = storedKey;
+                document.getElementById('apiKeyInput').value = storedKey; // Pre-fill if exists
+                apiKeyStatusElement.textContent = "סטטוס: מפתח API נטען מהאחסון המקומי.";
+                apiKeyStatusElement.className = "text-xs mt-1 text-blue-600";
+            } else {
+                 apiKeyStatusElement.textContent = "סטטוס: לא הוגדר. הזן מפתח כדי להשתמש בתכונות AI.";
+                 apiKeyStatusElement.className = "text-xs mt-1 text-red-500";
+            }
+        }
+        loadApiKey(); // Call on page load
+
+        // --- Core AI Processing for New Call ---
+        async function processNewCall() {
+            const transcriptionInput = document.getElementById('transcriptionInput');
+            const transcriptionText = transcriptionInput.value.trim();
+            const processingStatus = document.getElementById('processingStatus');
+
+            if (!geminiApiKey) {
+                processingStatus.textContent = "שגיאה: מפתח Gemini API לא הוגדר. אנא הזן אותו למעלה.";
+                processingStatus.className = "mt-3 text-sm text-red-500";
+                return;
+            }
+            if (!transcriptionText) {
+                processingStatus.textContent = "שגיאה: אנא הדבק תמלול שיחה.";
+                processingStatus.className = "mt-3 text-sm text-red-500";
+                return;
+            }
+
+            processingStatus.textContent = "מעבד תמלול... זה עשוי לקחת מספר רגעים.";
+            processingStatus.className = "mt-3 text-sm text-blue-600";
+            openModal("🤖 מעבד ניתוח שיחה חדשה..."); // Use the main modal for loading indication
+
+            // Construct the prompt for Gemini, asking for JSON output
+            const promptForFullAnalysis = `${advancedAnalysisPrompt}\n\nהנה תמלול השיחה לניתוח:\n<transcription_text>\n${transcriptionText}\n</transcription_text>\n\nאנא החזר את הניתוח המלא כ-JSON יחיד עם המבנה שצוין למעלה.`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: promptForFullAnalysis }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            };
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API request failed: ${errorData.error?.message || response.statusText}`);
+                }
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
+                    const analysisJsonString = result.candidates[0].content.parts[0].text;
+                    const analysisData = JSON.parse(analysisJsonString);
+                    populateReportWithData(analysisData); // New function to fill the HTML
+                    processingStatus.textContent = "ניתוח השיחה הושלם והדוח עודכן!";
+                    processingStatus.className = "mt-3 text-sm text-green-600";
+                } else {
+                    throw new Error("מבנה תגובה לא צפוי מה-API.");
+                }
+            } catch (error) {
+                console.error("Error processing new call:", error);
+                processingStatus.textContent = `שגיאה בעיבוד: ${error.message}`;
+                processingStatus.className = "mt-3 text-sm text-red-500";
+                geminiError.textContent = `שגיאה בעיבוד השיחה החדשה: ${error.message}`;
+                geminiError.style.display = 'block';
+            } finally {
+                 closeModal(); // Close the main modal
+            }
+        }
+
+        function populateReportWithData(data) {
+            // Helper to create list items
+            const createListItems = (itemsArray) => itemsArray && Array.isArray(itemsArray) ? itemsArray.map(item => `<li>${typeof item === 'object' ? item.taskDescription || JSON.stringify(item) : item}</li>`).join('') : '<li class="text-gray-500 italic">אין נתונים זמינים.</li>';
+            const createActionListItems = (itemsArray, forAharon = true) => {
+                 if (!itemsArray || !Array.isArray(itemsArray)) return '<li class="text-gray-500 italic">אין משימות זמינות.</li>';
+                 return itemsArray.map(item => {
+                    let taskHTML = `<li><strong>${item.taskDescription || 'משימה לא מוגדרת'}</strong>`;
+                    if(item.impliedUrgency) taskHTML += `. דחיפות: ${item.impliedUrgency}.`;
+                    if(forAharon && (item.taskDescription.toLowerCase().includes('נס מולטימדיה') || item.taskDescription.toLowerCase().includes('מוזיאון') || item.taskDescription.toLowerCase().includes('מני') || item.taskDescription.toLowerCase().includes('נחמן'))) {
+                        let taskContext = item.taskDescription.split('עם ')[1] || item.taskDescription; // Basic context
+                        taskHTML += ` <button class="gemini-button ml-2" data-task-context="${taskContext.split('.')[0].trim()}" onclick="generateEmailDraft(this)"><i class="fas fa-wand-magic-sparkles"></i> הפק טיוטת מייל</button>`;
+                    }
+                    taskHTML += `</li>`;
+                    return taskHTML;
+                 }).join('');
+            }
+
+
+            // I. Executive Summary
+            if (data.executiveSummary) {
+                const es = data.executiveSummary;
+                let summaryHTML = `<p class="mb-2"><strong>סוג שיחה:</strong> ${es.callType || 'לא צוין'}</p>`;
+                summaryHTML += `<p class="mb-2"><strong>מטרה עיקרית:</strong> ${es.mainPurpose || 'לא צוין'}</p>`;
+                if (es.keyOutcomesAndDecisions && es.keyOutcomesAndDecisions.length > 0) {
+                    summaryHTML += `<p class="mb-1"><strong>החלטות ותוצאות מפתח:</strong></p><ul class="list-disc pr-5">${createListItems(es.keyOutcomesAndDecisions)}</ul>`;
+                }
+                if (es.criticalRoadblocks && es.criticalRoadblocks.length > 0) {
+                    summaryHTML += `<p class="mt-2 mb-1"><strong>חסמים/אתגרים קריטיים:</strong></p><ul class="list-disc pr-5">${createListItems(es.criticalRoadblocks)}</ul>`;
+                }
+                summaryHTML += `<p class="mt-2"><strong>סנטימנט כללי:</strong> ${es.overallSentiment || 'לא צוין'}</p>`;
+                document.querySelector('#section-summary .section-content').innerHTML = summaryHTML;
+            } else {
+                 document.querySelector('#section-summary .section-content').innerHTML = '<p class="text-gray-500 italic">סיכום לא זמין.</p>';
+            }
+
+            // II. Action Items
+            if (data.actionItems) {
+                document.getElementById('aharon-tasks').innerHTML = createActionListItems(data.actionItems.forAharon, true);
+                document.getElementById('kalman-dev-tasks').innerHTML = createActionListItems(data.actionItems.forKalmanDev, false);
+            } else {
+                document.getElementById('aharon-tasks').innerHTML = '<li class="text-gray-500 italic">אין משימות לאהרון.</li>';
+                document.getElementById('kalman-dev-tasks').innerHTML = '<li class="text-gray-500 italic">אין משימות לקלמן/צוות.</li>';
+            }
+            
+            // III. Detailed Discussion Analysis (Populate each sub-section)
+            const populateDetailedSection = (sectionId, sectionData) => {
+                const sectionElement = document.querySelector(`${sectionId} .section-content`);
+                if (sectionElement && sectionData && typeof sectionData === 'object') {
+                    let contentHTML = '';
+                    for (const key in sectionData) {
+                        if (Array.isArray(sectionData[key]) && sectionData[key].length > 0) {
+                            // Attempt to create a more readable title from the key
+                            let titleKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); // e.g. productsServicesDiscussed -> Products Services Discussed
+                            // Simple Hebrew translation for common keys - can be expanded
+                            if (key === "productsServicesDiscussed") titleKey = "מוצרים/שירותים שנדונו";
+                            else if (key === "coreFunctionalityMVP") titleKey = "פונקציונליות ליבה/MVP";
+                            else if (key === "futureDevelopment") titleKey = "פיתוח עתידי";
+                            // ... add more translations as needed for other keys
+                            
+                            contentHTML += `<h3>${titleKey}</h3><ul>${createListItems(sectionData[key])}</ul>`;
+                        } else if (typeof sectionData[key] === 'string' && sectionData[key]) {
+                             contentHTML += `<p><strong>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> ${sectionData[key]}</p>`;
+                        }
+                    }
+                    sectionElement.innerHTML = contentHTML || '<p class="text-gray-500 italic">אין נתונים זמינים לחלק זה.</p>';
+                } else if (sectionElement) {
+                    sectionElement.innerHTML = '<p class="text-gray-500 italic">אין נתונים זמינים לחלק זה.</p>';
+                }
+            };
+
+            populateDetailedSection('#section-product-strategy', data.productStrategy);
+            populateDetailedSection('#section-pricing-business-model', data.pricingBusinessModel);
+            populateDetailedSection('#section-target-audience', data.targetAudience);
+            populateDetailedSection('#section-technical-aspects', data.technicalAspects);
+            populateDetailedSection('#section-collaborations-ext', data.collaborationsExternal);
+            
+            // Key Concerns
+            const concernsListElement = document.getElementById('concerns-list');
+            if (data.keyConcerns && data.keyConcerns.majorConcernsVoiced) {
+                concernsListElement.innerHTML = createListItems(data.keyConcerns.majorConcernsVoiced);
+            } else {
+                concernsListElement.innerHTML = '<li class="text-gray-500 italic">אין חששות מרכזיים.</li>';
+            }
+
+            // Participant Info
+            const participantElement = document.querySelector('#section-participants-roles .section-content');
+            if (data.participantInfo) {
+                let participantHTML = '<ul>';
+                if (data.participantInfo.participant1Name) { // Assuming internal call structure
+                    participantHTML += `<li><strong>${data.participantInfo.participant1Name}:</strong> ${data.participantInfo.participant1Role || 'לא צוין תפקיד'}</li>`;
+                }
+                if (data.participantInfo.participant2Name) {
+                    participantHTML += `<li><strong>${data.participantInfo.participant2Name}:</strong> ${data.participantInfo.participant2Role || 'לא צוין תפקיד'}</li>`;
+                }
+                // Add more participants if structure allows
+                participantHTML += '</ul>';
+                participantElement.innerHTML = participantHTML;
+            } else {
+                participantElement.innerHTML = '<p class="text-gray-500 italic">פרטי משתתפים לא זמינים.</p>';
+            }
+
+            // Important Quotes
+            const quotesElement = document.querySelector('#section-quotes .section-content');
+            if (data.importantQuotes && data.importantQuotes.length > 0) {
+                quotesElement.innerHTML = `<ul>${createListItems(data.importantQuotes)}</ul>`;
+            } else {
+                quotesElement.innerHTML = '<p class="text-gray-500 italic">אין ציטוטים חשובים.</p>';
+            }
+
+            // People Mentioned Table
+            const peopleTableBody = document.querySelector('#people-mentioned-table tbody');
+            if (data.peopleMentionedTable && data.peopleMentionedTable.length > 0) {
+                let tableHTML = '';
+                data.peopleMentionedTable.forEach(person => {
+                    tableHTML += `<tr><td>${person.nameEntity || ''}</td><td>${person.roleContext || ''}</td><td>${person.keyInfoAction || ''}</td></tr>`;
+                });
+                peopleTableBody.innerHTML = tableHTML;
+            } else {
+                peopleTableBody.innerHTML = '<tr><td colspan="3" class="text-gray-500 italic text-center">לא הוזכרו אישים/גורמים ספציפיים.</td></tr>';
+            }
+
+            // AI Notes
+            const aiNotesElement = document.querySelector('#section-ai-notes .section-content');
+            if (data.aiNotes && data.aiNotes.length > 0) {
+                aiNotesElement.innerHTML = `<ul>${createListItems(data.aiNotes)}</ul>`;
+            } else {
+                aiNotesElement.innerHTML = '<p class="text-gray-500 italic">אין הערות AI.</p>';
+            }
+            
+            // Clear calendar and context for new report
+            document.getElementById('calendar-suggestions-content').innerHTML = '<p class="text-gray-500 italic">הצעות ליומן יופיעו כאן...</p>';
+            document.getElementById('additionalContextInput').value = '';
+            document.getElementById('reevaluation-status').textContent = '';
+
+
+            // Update CSV data points (simplified for this example, would need more robust mapping)
+            // This is a placeholder; a full mapping from analysisData to csvDataPoints is needed.
+            csvDataPoints.length = 1; // Clear existing data except header
+            if(data.executiveSummary) csvDataPoints.push(["סיכום מנהלים", data.executiveSummary.mainPurpose || ""]);
+            // ... add more data points from analysisData to csvDataPoints
+        }
+
+
+        // --- Existing JS functions (sidebar, modal, Gemini calls, etc.) ---
+        const modal = document.getElementById('geminiResponseModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const geminiResponseContent = document.getElementById('geminiResponseContent');
+        const geminiLoadingIndicator = document.getElementById('geminiLoadingIndicator');
+        const geminiError = document.getElementById('geminiError');
+        const additionalContextInput = document.getElementById('additionalContextInput');
+        const reevaluationStatus = document.getElementById('reevaluation-status');
+        const calendarSuggestionsContent = document.getElementById('calendar-suggestions-content');
+
+
+        function openModal(title) {
+            modalTitle.textContent = title;
+            geminiResponseContent.innerHTML = ''; 
+            geminiError.style.display = 'none';
+            geminiLoadingIndicator.style.display = 'block';
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        async function callGeminiAPI(prompt, isJsonOutput = false) { // Added isJsonOutput flag
+            if (!geminiApiKey) {
+                alert("מפתח Gemini API לא הוגדר. אנא הזן אותו באזור ההגדרות.");
+                return Promise.reject("API Key not set");
+            }
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+            if (isJsonOutput) {
+                payload.generationConfig = { responseMimeType: "application/json" };
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Gemini API Error Response:', errorData);
+                    throw new Error(`API request failed with status ${response.status}: ${errorData.error?.message || response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text; // This will be JSON string if isJsonOutput was true
+                } else {
+                    console.error('Unexpected Gemini API response structure:', result);
+                    throw new Error('תוכן לא התקבל מה-API.');
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                throw error; 
+            }
+        }
+
+        async function generateEmailDraft(buttonElement) {
+            const taskItem = buttonElement.closest('li');
+            const taskContext = taskItem.dataset.taskContext || taskItem.textContent.split('.')[0].trim(); 
+            const callSummaryElement = document.querySelector('#section-summary .section-content p');
+            const callSummary = callSummaryElement ? callSummaryElement.textContent : "לא סופק סיכום שיחה עדיין.";
+            const productName = "המוצר שלנו לתמלול וניהול שיחות חכם"; 
+            const userProvidedContext = additionalContextInput.value.trim();
+
+            openModal(`✨ הפקת טיוטת מייל עבור: ${taskContext}`);
+
+            let prompt = `
+                אתה מתפקד כעוזר אישי עבור אהרון.
+                המשימה שלך היא לכתוב טיוטת מייל מקצועית וידידותית בעברית.
+                הנמען הוא איש קשר בנושא: "${taskContext}".
+                מטרת המייל היא ליזום פגישה או המשך שיחה בנושא זה.
+                
+                הרקע הכללי לשיחה (מסיכום שיחת תכנון פנימית): "${callSummary}"
+                שם המוצר/המיזם המרכזי שאהרון וקלמן מפתחים הוא: "${productName}".
+                
+                במייל, אנא:
+                1. הצג את אהרון (אם רלוונטי, ניתן להניח שהייתה היכרות מוקדמת קלה או ששמו הוזכר).
+                2. ציין בקצרה את הנושא ("${taskContext}") ואת הרצון לקבוע פגישה/שיחה להרחבה.
+                3. אם מתאים, רמוז לערך הפוטנציאלי של "${productName}" עבור הנמען או שיתוף הפעולה.
+                4. הצע זמינות לפגישה או בקש מהנמען להציע זמן שנוח לו.
+                5. שמור על טון חיובי ומקצועי.
+                6. סיום בנימוס עם פרטי יצירת קשר של אהרון (ניתן להשתמש בפרטים גנריים כמו "אהרון | [מספר טלפון] | [כתובת מייל]").
+            `;
+            if (userProvidedContext) {
+                prompt += `\n\nהקשר נוסף שסופק על ידי המשתמש ושחשוב להתייחס אליו בעדינות בטיוטה: "${userProvidedContext}"`;
+            }
+            prompt += "\n\nאנא ספק רק את גוף המייל, ללא שורת נושא.";
+
+
+            try {
+                const emailDraft = await callGeminiAPI(prompt);
+                geminiResponseContent.textContent = emailDraft;
+            } catch (error) {
+                geminiResponseContent.textContent = ''; 
+                geminiError.textContent = `אירעה שגיאה בעת הפקת טיוטת המייל: ${error.message}`;
+                geminiError.style.display = 'block';
+            } finally {
+                geminiLoadingIndicator.style.display = 'none';
+            }
+        }
+
+        async function suggestSolutions() {
+            const concernsList = document.getElementById('concerns-list');
+            let concernsText = "החששות והסיכונים המרכזיים שזוהו בפרויקט הם:\n";
+            if (concernsList.children.length > 0 && !concernsList.children[0].classList.contains('italic')) {
+                 concernsList.querySelectorAll('li').forEach(li => {
+                    concernsText += `- ${li.textContent.trim()}\n`;
+                });
+            } else {
+                concernsText = "לא זוהו חששות ספציפיים בניתוח הנוכחי.";
+            }
+           
+            const userProvidedContext = additionalContextInput.value.trim();
+            
+            openModal("✨ הצעת פתרונות לאתגרים");
+
+            let prompt = `
+                בהתבסס על רשימת החששות והסיכונים הבאה מפרויקט תוכנה:
+                ${concernsText}
+            `;
+            if (userProvidedContext) {
+                prompt += `\n\nהקשר נוסף שסופק על ידי המשתמש ושחשוב להתייחס אליו בהצעת הפתרונות: "${userProvidedContext}"`;
+            }
+            prompt += `
+                אנא הצע 3-5 פתרונות יצירתיים, אסטרטגיות התמודדות, או דרכי פעולה אפשריות לכל אחד מהאתגרים המרכזיים.
+                אם לא זוהו חששות, ציין זאת והצע בדיקות כלליות לזיהוי סיכונים בפרויקט חדש.
+                התמקד בהצעות פרקטיות וניתנות ליישום. הצג את הפתרונות בצורה מובנית וברורה (למשל, תחת כל חשש, רשימת פתרונות).
+            `;
+
+            try {
+                const solutions = await callGeminiAPI(prompt);
+                geminiResponseContent.textContent = solutions;
+            } catch (error) {
+                geminiResponseContent.textContent = '';
+                geminiError.textContent = `אירעה שגיאה בעת הצעת הפתרונות: ${error.message}`;
+                geminiError.style.display = 'block';
+            } finally {
+                geminiLoadingIndicator.style.display = 'none';
+            }
+        }
+        
+        function generateGoogleCalendarLink(title, startDate, endDate, description, location = '') {
+            let dateString = '';
+            if (startDate && endDate) {
+                try {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    if (!isNaN(start) && !isNaN(end)) {
+                        const formatISO = (date) => date.toISOString().replace(/-|:|\.\d{3}/g, '');
+                        dateString = `${formatISO(start)}/${formatISO(end)}`;
+                    } else {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(10, 0, 0, 0); 
+                        const tomorrowEnd = new Date(tomorrow.getTime() + 60 * 60 * 1000); 
+                        const formatISO = (date) => date.toISOString().replace(/-|:|\.\d{3}/g, '');
+                        dateString = `${formatISO(tomorrow)}/${formatISO(tomorrowEnd)}`;
+                        description += "\n(שים לב: התאריך והשעה נקבעו אוטומטית, אנא התאם אותם)";
+                    }
+                } catch (e) {
+                     const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(10, 0, 0, 0);
+                        const tomorrowEnd = new Date(tomorrow.getTime() + 60 * 60 * 1000);
+                        const formatISO = (date) => date.toISOString().replace(/-|:|\.\d{3}/g, '');
+                        dateString = `${formatISO(tomorrow)}/${formatISO(tomorrowEnd)}`;
+                        description += "\n(שים לב: התאריך והשעה נקבעו אוטומטית, אנא התאם אותם)";
+                }
+            } else {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(10, 0, 0, 0); 
+                const tomorrowEnd = new Date(tomorrow.getTime() + 60 * 60 * 1000); 
+                const formatISO = (date) => date.toISOString().replace(/-|:|\.\d{3}/g, '');
+                dateString = `${formatISO(tomorrow)}/${formatISO(tomorrowEnd)}`;
+                description += "\n(שים לב: התאריך והשעה נקבעו אוטומטית, אנא התאם אותם)";
+            }
+
+            const encodedTitle = encodeURIComponent(title);
+            const encodedDescription = encodeURIComponent(description);
+            const encodedLocation = encodeURIComponent(location);
+            
+            return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${dateString}&details=${encodedDescription}&location=${encodedLocation}`;
+        }
+
+
+        async function getCalendarSuggestions() {
+            const aharonTasksList = document.getElementById('aharon-tasks');
+            let aharonTasksText = "משימות עיקריות לתיאום פגישות עבור אהרון:\n";
+            if (aharonTasksList.children.length > 0 && !aharonTasksList.children[0].classList.contains('italic')) {
+                aharonTasksList.querySelectorAll('li[data-task-context]').forEach(li => { 
+                    aharonTasksText += `- ${li.textContent.split('<button')[0].trim()}\n`;
+                });
+            } else {
+                 aharonTasksText = "לא זוהו משימות ספציפיות לתיאום פגישות עבור אהרון בניתוח הנוכחי.\n";
+            }
+
+            const callSummaryElement = document.querySelector('#section-summary .section-content p');
+            const callSummary = callSummaryElement ? callSummaryElement.textContent : "לא סופק סיכום שיחה עדיין.";
+            const userProvidedContext = additionalContextInput.value.trim();
+
+            calendarSuggestionsContent.innerHTML = `<div class="loading-indicator" style="display:block;"><i class="fas fa-spinner"></i><p>מעבד בקשה...</p></div>`;
+            
+            let prompt = `
+                אתה AI המסייע בתכנון יומן. בהתבסס על סיכום השיחה הבא: "${callSummary}"
+                ועל רשימת המשימות הבאה של אהרון ליצירת קשר ותיאום פגישות:
+                ${aharonTasksText}
+            `;
+            if (userProvidedContext) {
+                prompt += `\n\nהקשר נוסף שסופק על ידי המשתמש ושחשוב להתייחס אליו בהצעות התזמון: "${userProvidedContext}"`;
+            }
+            prompt += `
+                אנא ספק הצעות תזמון מפורטות בעברית. עבור כל פגישה מרכזית שאהרון צריך לקבוע, ספק את הפרטים הבאים בפורמט JSON. כל אובייקט ב-JSON צריך לייצג פגישה ולהכיל את השדות: "contact_person_or_company", "suggested_title", "suggested_description", "priority" (למשל: "גבוהה", "בינונית", "רגילה"), "suggested_date" (בפורמט YYYY-MM-DD, אם ניתן להסיק או להציע באופן כללי, אחרת null), "suggested_time" (בפורמט HH:MM, אם ניתן, אחרת null), ו-"notes" (הערות נוספות כמו תלויות, קונפליקטים פוטנציאליים, או דחיפות).
+
+                דוגמה לאובייקט JSON עבור פגישה אחת:
+                {
+                    "contact_person_or_company": "נס מולטימדיה",
+                    "suggested_title": "פגישת היכרות ובחינת שת\"פ עם נס מולטימדיה",
+                    "suggested_description": "דיון על המוצר שלנו לתמלול וניהול שיחות, ובחינת אפשרויות לשיתוף פעולה או כלקוח. משתתפים: אהרון, נציג נס מולטימדיה.",
+                    "priority": "גבוהה",
+                    "suggested_date": null, 
+                    "suggested_time": null,
+                    "notes": "קלמן הדגיש חשיבות גבוהה לקשר זה. יש לתאם בהקדם."
+                }
+
+                החזר מערך של אובייקטים כאלה בפורמט JSON. הקפד על תקינות ה-JSON. אם אין משימות רלוונטיות לתזמון, החזר מערך JSON ריק.
+            `;
+            
+            try {
+                const jsonString = await callGeminiAPI(prompt, true); // Request JSON output
+                calendarSuggestionsContent.innerHTML = ''; // Clear loading
+                const suggestionsArray = JSON.parse(jsonString); 
+
+                if (Array.isArray(suggestionsArray) && suggestionsArray.length > 0) {
+                    suggestionsArray.forEach(event => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = 'calendar-suggestion-item';
+                        
+                        let eventHTML = `<h4>${event.suggested_title || `פגישה עם ${event.contact_person_or_company}`}</h4>`;
+                        eventHTML += `<p><strong>תיאור:</strong> ${event.suggested_description || 'אין תיאור זמין'}</p>`;
+                        if(event.priority) eventHTML += `<p><strong>עדיפות:</strong> ${event.priority}</p>`;
+                        if(event.suggested_date) eventHTML += `<p><strong>תאריך מוצע:</strong> ${event.suggested_date}</p>`;
+                        if(event.suggested_time) eventHTML += `<p><strong>שעה מוצעת:</strong> ${event.suggested_time}</p>`;
+                        if(event.notes) eventHTML += `<p><strong>הערות:</strong> ${event.notes}</p>`;
+
+                        let startDateForLink, endDateForLink;
+                        if (event.suggested_date && event.suggested_time) {
+                            try {
+                                const [hours, minutes] = event.suggested_time.split(':').map(Number);
+                                const d = new Date(event.suggested_date);
+                                d.setHours(hours, minutes);
+                                startDateForLink = d;
+                                endDateForLink = new Date(d.getTime() + 60 * 60 * 1000); 
+                            } catch (e) { /* Fallback handled by generateGoogleCalendarLink */ }
+                        }
+                        
+                        const gCalLink = generateGoogleCalendarLink(
+                            event.suggested_title || `פגישה עם ${event.contact_person_or_company}`,
+                            startDateForLink, 
+                            endDateForLink,
+                            event.suggested_description || '',
+                            '' 
+                        );
+
+                        eventHTML += `<a href="${gCalLink}" target="_blank" class="calendar-button"><i class="fab fa-google"></i> הוסף ליומן Google</a>`;
+                        eventDiv.innerHTML = eventHTML;
+                        calendarSuggestionsContent.appendChild(eventDiv);
+                    });
+                } else {
+                     calendarSuggestionsContent.innerHTML = '<p class="text-gray-500 italic">לא נמצאו הצעות תזמון ספציפיות מה-AI.</p>';
+                }
+            } catch (error) {
+                console.error("Error in getCalendarSuggestions:", error);
+                calendarSuggestionsContent.innerHTML = `<p class="text-red-500">אירעה שגיאה בקבלת הצעות תזמון: ${error.message}</p>`;
+            }
+        }
+
+
+        async function reEvaluateAnalysis() {
+            const newContext = additionalContextInput.value.trim();
+            if (!newContext) {
+                reevaluationStatus.textContent = "אנא הזן הקשר נוסף.";
+                reevaluationStatus.className = "mt-3 text-sm text-yellow-600";
+                return;
+            }
+
+            reevaluationStatus.textContent = "מעדכן ניתוח...";
+            reevaluationStatus.className = "mt-3 text-sm text-blue-600";
+            
+            // Gather current state of the report to provide as context for re-evaluation
+            const currentReportState = {
+                executiveSummary: document.querySelector('#section-summary .section-content').innerHTML,
+                aharonTasks: Array.from(document.querySelectorAll('#aharon-tasks li')).map(li => li.textContent.split('<button')[0].trim()),
+                kalmanDevTasks: Array.from(document.querySelectorAll('#kalman-dev-tasks li')).map(li => li.textContent.trim())
+            };
+            
+            openModal("🔄 עדכון ניתוח עם הקשר חדש");
+
+            const prompt = `
+                אתה AI המסייע בעדכון ניתוח שיחה קיים בהתבסס על הקשר חדש שסופק על ידי המשתמש.
+                
+                הניתוח המקורי (בקיצור) הוא:
+                <סיכום_מקורי>
+                ${currentReportState.executiveSummary.replace(/<[^>]*>/g, ' ').substring(0, 500)}... 
+                </סיכום_מקורי>
+
+                <משימות_אהרון_מקוריות>
+                ${currentReportState.aharonTasks.join('\n- ')}
+                </משימות_אהרון_מקוריות>
+
+                <משימות_קלמן_ודוות_מקוריות>
+                ${currentReportState.kalmanDevTasks.join('\n- ')}
+                </משימות_קלמן_ודוות_מקוריות>
+
+                המשתמש הוסיף את ההקשר החדש הבא:
+                <הקשר_חדש>
+                ${newContext}
+                </הקשר_חדש>
+
+                בהתבסס על כל המידע הזה (הניתוח המקורי וההקשר החדש), אנא ספק JSON מעודכן עבור סיכום המנהלים (executiveSummary) ורשימות המשימות (actionItems.forAharon, actionItems.forKalmanDev) בלבד, בהתאם למבנה ה-JSON המלא שצוין ב-"Advanced AI Call Transcription Analysis Prompt".
+                החזר רק את האובייקט JSON המכיל את השדות "executiveSummary" ו-"actionItems" המעודכנים.
+                לדוגמה:
+                {
+                  "executiveSummary": { "callType": "...", "mainPurpose": "...", ... },
+                  "actionItems": {
+                    "forAharon": [ { "taskDescription": "...", ... } ],
+                    "forKalmanDev": [ { "taskDescription": "...", ... } ]
+                  }
+                }
+            `;
+
+            try {
+                const jsonResponse = await callGeminiAPI(prompt, true); // Expecting JSON
+                const updatedData = JSON.parse(jsonResponse);
+
+                if (updatedData.executiveSummary) {
+                    populateReportWithData({ executiveSummary: updatedData.executiveSummary }); // Populate only summary part
+                }
+                if (updatedData.actionItems) {
+                    populateReportWithData({ actionItems: updatedData.actionItems }); // Populate only action items part
+                }
+                
+                // A more robust populateReportWithData would handle partial updates.
+                // For now, we are re-populating specific sections based on what AI returns.
+                // If AI returns full structure, the existing populateReportWithData can be used.
+                // But the prompt asks for specific parts.
+
+                // Let's refine how we update based on the specific prompt structure
+                if (updatedData.executiveSummary) {
+                    const es = updatedData.executiveSummary;
+                    let summaryHTML = `<p class="mb-2"><strong>סוג שיחה:</strong> ${es.callType || 'לא צוין'}</p>`;
+                    summaryHTML += `<p class="mb-2"><strong>מטרה עיקרית:</strong> ${es.mainPurpose || 'לא צוין'}</p>`;
+                    if (es.keyOutcomesAndDecisions && es.keyOutcomesAndDecisions.length > 0) {
+                        summaryHTML += `<p class="mb-1"><strong>החלטות ותוצאות מפתח:</strong></p><ul class="list-disc pr-5">${es.keyOutcomesAndDecisions.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                    }
+                    if (es.criticalRoadblocks && es.criticalRoadblocks.length > 0) {
+                        summaryHTML += `<p class="mt-2 mb-1"><strong>חסמים/אתגרים קריטיים:</strong></p><ul class="list-disc pr-5">${es.criticalRoadblocks.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                    }
+                    summaryHTML += `<p class="mt-2"><strong>סנטימנט כללי:</strong> ${es.overallSentiment || 'לא צוין'}</p>`;
+                    document.querySelector('#section-summary .section-content').innerHTML = summaryHTML;
+                }
+
+                if (updatedData.actionItems) {
+                    document.getElementById('aharon-tasks').innerHTML = createActionListItems(updatedData.actionItems.forAharon, true);
+                    document.getElementById('kalman-dev-tasks').innerHTML = createActionListItems(updatedData.actionItems.forKalmanDev, false);
+                }
+
+
+                reevaluationStatus.textContent = "הניתוח עודכן בהצלחה!";
+                reevaluationStatus.className = "mt-3 text-sm text-green-600";
+                setTimeout(() => closeModal(), 1500);
+
+
+            } catch (error) {
+                geminiResponseContent.textContent = '';
+                geminiError.textContent = `אירעה שגיאה בעדכון הניתוח: ${error.message}`;
+                geminiError.style.display = 'block';
+                reevaluationStatus.textContent = "שגיאה בעדכון הניתוח.";
+                reevaluationStatus.className = "mt-3 text-sm text-red-600";
+            } finally {
+                geminiLoadingIndicator.style.display = 'none';
+            }
+        }
+
+        // --- UI Interactions (Sidebar, Collapsible sections) ---
+        const uiSidebar = document.getElementById('sidebar');
+        const uiMenuButton = document.getElementById('menu-button');
+        
+        uiMenuButton.addEventListener('click', () => {
+            uiSidebar.classList.toggle('hidden-sidebar');
+        });
+        
+        document.querySelectorAll('#report-navigation .nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (window.innerWidth < 1024) { 
+                    uiSidebar.classList.add('hidden-sidebar');
+                }
+                document.querySelectorAll('#report-navigation .nav-link').forEach(navLink => navLink.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('h2[data-collapsible]').forEach(header => {
+            header.addEventListener('click', () => {
+                const section = header.closest('.report-section');
+                section.classList.toggle('collapsed');
+            });
+        });
+
+        const uiNavLinks = document.querySelectorAll('#report-navigation a');
+        const uiSections = document.querySelectorAll('.report-section');
+        let uiScrollTimeout;
+
+        window.addEventListener('scroll', () => {
+            clearTimeout(uiScrollTimeout);
+            uiScrollTimeout = setTimeout(() => { 
+                let current = '';
+                uiSections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.offsetHeight;
+                    if (pageYOffset >= sectionTop - (window.innerHeight / 3) && pageYOffset < sectionTop + sectionHeight - (window.innerHeight / 3)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                uiNavLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').substring(1) === current) {
+                        link.classList.add('active');
+                    }
+                });
+                if (!current && uiNavLinks.length > 0 && pageYOffset < uiSections[0].offsetTop) {
+                     uiNavLinks[0].classList.add('active'); 
+                }
+            }, 100); 
+        });
+
+        if (uiNavLinks.length > 0) {
+            let activeFoundOnLoad = false;
+            uiSections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.offsetHeight;
+                 if (pageYOffset >= sectionTop - 80 && pageYOffset < sectionTop + sectionHeight - 80) { 
+                    const activeLink = document.querySelector(`#report-navigation a[href="#${section.id}"]`);
+                    if(activeLink) {
+                        activeLink.classList.add('active');
+                        activeFoundOnLoad = true;
+                    }
+                }
+            });
+            if (!activeFoundOnLoad && uiNavLinks[0] && pageYOffset < uiSections[0].offsetTop) { 
+                 uiNavLinks[0].classList.add('active');
+            }
+        }
+
+    </script>
+</body>
+</html>
