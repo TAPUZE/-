@@ -560,7 +560,7 @@
 
 **Objective:** To comprehensively analyze any provided call transcription, extract all pertinent information, identify key insights and action items, and present them in a structured, concise, and actionable report.
 
-**Your Role as AI:** You are an advanced AI assistant specializing in deep analysis of call transcriptions. Your goal is to understand not just the explicit content but also the implicit context, relationships, and strategic importance of various discussion points.
+**Your Role as AI:** You are an advanced AI assistant specializing in deep analysis of call transcriptions. Your goal is to understand not just the explicit content but also the implicit context, relationships, and strategic importance of various discussion points. **You MUST ensure your entire output is a single, perfectly valid JSON object.**
 
 **Input:** A raw text transcription of a call.
 
@@ -578,6 +578,22 @@
 3.  **Focus on Actionability:** Clearly define next steps and assign them to specific individuals or groups if mentioned or clearly implied.
 
 4.  **Language Nuances:** If the call is in a language other than English, ensure your understanding and summarization accurately reflect the nuances.
+
+5.  **CRITICAL JSON VALIDITY:**
+    * Your entire response **MUST** be a single, valid JSON object.
+    * Pay meticulous attention to JSON syntax: correct use of curly braces \`{}\`, square brackets \`[]\`, commas \`,\`, colons \`:\`, and double quotes \`"\` for all keys and string values.
+    * **Array Syntax:** Ensure all arrays are correctly formatted. Do **NOT** include trailing commas after the last element in an array or object. Ensure commas correctly separate elements within arrays and key-value pairs within objects.
+    * **String Escaping:** All string values within the JSON **MUST** be properly escaped. This means:
+        * Double quotes \`"\` within strings must be escaped as \`\\"\`.
+        * Backslashes \`\\\` within strings must be escaped as \`\\\\\`.
+        * Newline characters within strings must be escaped as \`\\n\`.
+        * Carriage returns within strings must be escaped as \`\\r\`.
+        * Tabs within strings must be escaped as \`\\t\`.
+        * Other special characters like form feeds (\`\\f\`) and backspaces (\`\\b\`) must also be escaped.
+    * Do not include any text or explanations outside of the main JSON object. The response should start with \`{\` and end with \`}\`.
+    * **Re-emphasize: NO TRAILING COMMAS. Double-check all arrays and objects for this common error.**
+
+---
 
 **Desired Output Structure & Content (Return as a single JSON object with the following top-level keys):**
 
@@ -601,8 +617,8 @@ Each key should map to an object or string containing the structured information
 * **"aiNotes"**: An array of strings.
 
 ---
-Example for an action item object: {"taskDescription": "תיאום פגישה עם נס מולטימדיה", "assignedTo": "אהרון", "impliedUrgency": "גבוהה", "contextReason": "בחינת שת\"פ/לקוח"}
-Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext": "איש טכני/מפתח", "keyInfoAction": "אמור לסייע בהפעלת אפליקציית ההקלטות"}
+Example for an action item object: \`{"taskDescription": "תיאום פגישה עם נס מולטימדיה", "assignedTo": "אהרון", "impliedUrgency": "גבוהה", "contextReason": "בחינת שת\\"פ/לקוח"}\`
+Example for peopleMentionedTable object: \`{"nameEntity": "שימי", "roleContext": "איש טכני/מפתח", "keyInfoAction": "אמור לסייע בהפעלת אפליקציית ההקלטות"}\`
 ---
 `;
 
@@ -659,15 +675,16 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
 
             processingStatus.textContent = "מעבד תמלול... זה עשוי לקחת מספר רגעים.";
             processingStatus.className = "mt-3 text-sm text-blue-600";
-            openModal("🤖 מעבד ניתוח שיחה חדשה..."); // Use the main modal for loading indication
+            openModal("🤖 מעבד ניתוח שיחה חדשה..."); 
 
-            // Construct the prompt for Gemini, asking for JSON output
             const promptForFullAnalysis = `${advancedAnalysisPrompt}\n\nהנה תמלול השיחה לניתוח:\n<transcription_text>\n${transcriptionText}\n</transcription_text>\n\nאנא החזר את הניתוח המלא כ-JSON יחיד עם המבנה שצוין למעלה.`;
             
             const payload = {
                 contents: [{ role: "user", parts: [{ text: promptForFullAnalysis }] }],
                 generationConfig: { responseMimeType: "application/json" }
             };
+
+            let analysisJsonString = ""; // To store the raw string for debugging
 
             try {
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
@@ -684,9 +701,15 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 const result = await response.json();
 
                 if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
-                    const analysisJsonString = result.candidates[0].content.parts[0].text;
-                    const analysisData = JSON.parse(analysisJsonString);
-                    populateReportWithData(analysisData); // New function to fill the HTML
+                    analysisJsonString = result.candidates[0].content.parts[0].text;
+                    // Attempt to clean common LLM JSON issues (e.g., trailing commas in arrays/objects)
+                    // This is a basic attempt and might not cover all cases.
+                    let cleanedJsonString = analysisJsonString
+                        .replace(/,\s*]/g, "]") // Remove trailing comma in array
+                        .replace(/,\s*}/g, "}"); // Remove trailing comma in object
+                    
+                    const analysisData = JSON.parse(cleanedJsonString);
+                    populateReportWithData(analysisData); 
                     processingStatus.textContent = "ניתוח השיחה הושלם והדוח עודכן!";
                     processingStatus.className = "mt-3 text-sm text-green-600";
                 } else {
@@ -694,25 +717,45 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 }
             } catch (error) {
                 console.error("Error processing new call:", error);
-                processingStatus.textContent = `שגיאה בעיבוד: ${error.message}`;
+                console.error("Problematic JSON string received from API:", analysisJsonString); // Log the problematic string
+                processingStatus.textContent = `שגיאה בעיבוד: ${error.message}. בדוק את הקונסול לפרטים נוספים על ה-JSON שהתקבל.`;
                 processingStatus.className = "mt-3 text-sm text-red-500";
-                geminiError.textContent = `שגיאה בעיבוד השיחה החדשה: ${error.message}`;
+                geminiError.textContent = `שגיאה בעיבוד השיחה החדשה: ${error.message}. ה-JSON שהתקבל מה-API הודפס לקונסול הבדיקה (developer console).`;
                 geminiError.style.display = 'block';
             } finally {
-                 closeModal(); // Close the main modal
+                 closeModal(); 
             }
         }
 
         function populateReportWithData(data) {
-            // Helper to create list items
-            const createListItems = (itemsArray) => itemsArray && Array.isArray(itemsArray) ? itemsArray.map(item => `<li>${typeof item === 'object' ? item.taskDescription || JSON.stringify(item) : item}</li>`).join('') : '<li class="text-gray-500 italic">אין נתונים זמינים.</li>';
+            const createListItems = (itemsArray, keyToDisplay = null) => {
+                if (!itemsArray || !Array.isArray(itemsArray) || itemsArray.length === 0) {
+                    return '<li class="text-gray-500 italic">אין נתונים זמינים.</li>';
+                }
+                return itemsArray.map(item => {
+                    let displayItem = '';
+                    if (typeof item === 'string') {
+                        displayItem = item;
+                    } else if (typeof item === 'object' && item !== null) {
+                        displayItem = keyToDisplay && item[keyToDisplay] ? item[keyToDisplay] : item.taskDescription || JSON.stringify(item);
+                    } else {
+                        displayItem = 'נתון לא תקין';
+                    }
+                    return `<li>${displayItem}</li>`;
+                }).join('');
+            };
+
             const createActionListItems = (itemsArray, forAharon = true) => {
-                 if (!itemsArray || !Array.isArray(itemsArray)) return '<li class="text-gray-500 italic">אין משימות זמינות.</li>';
+                 if (!itemsArray || !Array.isArray(itemsArray) || itemsArray.length === 0) return '<li class="text-gray-500 italic">אין משימות זמינות.</li>';
                  return itemsArray.map(item => {
                     let taskHTML = `<li><strong>${item.taskDescription || 'משימה לא מוגדרת'}</strong>`;
                     if(item.impliedUrgency) taskHTML += `. דחיפות: ${item.impliedUrgency}.`;
-                    if(forAharon && (item.taskDescription.toLowerCase().includes('נס מולטימדיה') || item.taskDescription.toLowerCase().includes('מוזיאון') || item.taskDescription.toLowerCase().includes('מני') || item.taskDescription.toLowerCase().includes('נחמן'))) {
-                        let taskContext = item.taskDescription.split('עם ')[1] || item.taskDescription; // Basic context
+                    if(item.contextReason) taskHTML += ` (הקשר: ${item.contextReason}).`;
+
+                    // Add Gemini button for specific tasks for Aharon
+                    const taskDescLower = (item.taskDescription || "").toLowerCase();
+                    if(forAharon && (taskDescLower.includes('נס מולטימדיה') || taskDescLower.includes('מוזיאון') || taskDescLower.includes('מני') || taskDescLower.includes('נחמן'))) {
+                        let taskContext = item.contextReason || item.taskDescription.split('עם ')[1] || item.taskDescription; 
                         taskHTML += ` <button class="gemini-button ml-2" data-task-context="${taskContext.split('.')[0].trim()}" onclick="generateEmailDraft(this)"><i class="fas fa-wand-magic-sparkles"></i> הפק טיוטת מייל</button>`;
                     }
                     taskHTML += `</li>`;
@@ -747,41 +790,54 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 document.getElementById('kalman-dev-tasks').innerHTML = '<li class="text-gray-500 italic">אין משימות לקלמן/צוות.</li>';
             }
             
-            // III. Detailed Discussion Analysis (Populate each sub-section)
-            const populateDetailedSection = (sectionId, sectionData) => {
-                const sectionElement = document.querySelector(`${sectionId} .section-content`);
-                if (sectionElement && sectionData && typeof sectionData === 'object') {
-                    let contentHTML = '';
-                    for (const key in sectionData) {
-                        if (Array.isArray(sectionData[key]) && sectionData[key].length > 0) {
-                            // Attempt to create a more readable title from the key
-                            let titleKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()); // e.g. productsServicesDiscussed -> Products Services Discussed
-                            // Simple Hebrew translation for common keys - can be expanded
-                            if (key === "productsServicesDiscussed") titleKey = "מוצרים/שירותים שנדונו";
-                            else if (key === "coreFunctionalityMVP") titleKey = "פונקציונליות ליבה/MVP";
-                            else if (key === "futureDevelopment") titleKey = "פיתוח עתידי";
-                            // ... add more translations as needed for other keys
-                            
-                            contentHTML += `<h3>${titleKey}</h3><ul>${createListItems(sectionData[key])}</ul>`;
-                        } else if (typeof sectionData[key] === 'string' && sectionData[key]) {
-                             contentHTML += `<p><strong>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> ${sectionData[key]}</p>`;
-                        }
-                    }
-                    sectionElement.innerHTML = contentHTML || '<p class="text-gray-500 italic">אין נתונים זמינים לחלק זה.</p>';
-                } else if (sectionElement) {
-                    sectionElement.innerHTML = '<p class="text-gray-500 italic">אין נתונים זמינים לחלק זה.</p>';
-                }
+            const sectionMappings = {
+                '#section-product-strategy': data.productStrategy,
+                '#section-pricing-business-model': data.pricingBusinessModel,
+                '#section-target-audience': data.targetAudience,
+                '#section-technical-aspects': data.technicalAspects,
+                '#section-collaborations-ext': data.collaborationsExternal
             };
 
-            populateDetailedSection('#section-product-strategy', data.productStrategy);
-            populateDetailedSection('#section-pricing-business-model', data.pricingBusinessModel);
-            populateDetailedSection('#section-target-audience', data.targetAudience);
-            populateDetailedSection('#section-technical-aspects', data.technicalAspects);
-            populateDetailedSection('#section-collaborations-ext', data.collaborationsExternal);
+            for (const sectionId in sectionMappings) {
+                const sectionData = sectionMappings[sectionId];
+                const sectionElement = document.querySelector(`${sectionId} .section-content`);
+                if (sectionElement) {
+                    if (sectionData && typeof sectionData === 'object' && Object.keys(sectionData).length > 0) {
+                        let contentHTML = '';
+                        for (const key in sectionData) {
+                            let titleKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                            // Basic translations - can be expanded
+                            const translations = {
+                                "productsServicesDiscussed": "מוצרים/שירותים שנדונו", "coreFunctionalityMVP": "פונקציונליות ליבה/MVP",
+                                "futureDevelopment": "פיתוח עתידי", "uxUiPoints": "נקודות UX/UI",
+                                "keyStrengthsUSPs": "חוזקות מרכזיות/USPs", "weaknessesImprovements": "חולשות/אזורים לשיפור",
+                                "pricingTiersProposals": "הצעות תמחור", "costConsiderations": "שיקולי עלות",
+                                "revenueModelStrategy": "מודל הכנסות", "financialConcernsTargets": "חששות/יעדים פיננסיים",
+                                "targetCustomerProfiles": "פרופיל לקוח יעד", "marketSegments": "פלחי שוק",
+                                "salesGoToMarket": "אסטרטגיית מכירות/שיווק", "competitorMentionsPositioning": "אזכורי מתחרים/מיצוב",
+                                "keyTechnologiesPlatforms": "טכנולוגיות/פלטפורמות מפתח", "technicalBlockersChallenges": "חסמים/אתגרים טכניים",
+                                "integrationPoints": "נקודות אינטגרציה", "dataSecurityPrivacy": "אבטחת מידע ופרטיות",
+                                "potentialExistingPartners": "שותפים פוטנציאליים/קיימים", "externalResourcesFreelancers": "משאבים חיצוניים/פרילנסרים",
+                                "natureOfCollaboration": "אופי השיתוף פעולה/תלות"
+                            };
+                            titleKey = translations[key] || titleKey;
+
+                            if (Array.isArray(sectionData[key]) && sectionData[key].length > 0) {
+                                contentHTML += `<h3>${titleKey}</h3><ul>${createListItems(sectionData[key])}</ul>`;
+                            } else if (typeof sectionData[key] === 'string' && sectionData[key]) {
+                                 contentHTML += `<p><strong>${titleKey}:</strong> ${sectionData[key]}</p>`;
+                            }
+                        }
+                        sectionElement.innerHTML = contentHTML || '<p class="text-gray-500 italic">אין נתונים זמינים לחלק זה.</p>';
+                    } else {
+                        sectionElement.innerHTML = '<p class="text-gray-500 italic">אין נתונים זמינים לחלק זה.</p>';
+                    }
+                }
+            }
             
             // Key Concerns
             const concernsListElement = document.getElementById('concerns-list');
-            if (data.keyConcerns && data.keyConcerns.majorConcernsVoiced) {
+            if (data.keyConcerns && data.keyConcerns.majorConcernsVoiced && data.keyConcerns.majorConcernsVoiced.length > 0) {
                 concernsListElement.innerHTML = createListItems(data.keyConcerns.majorConcernsVoiced);
             } else {
                 concernsListElement.innerHTML = '<li class="text-gray-500 italic">אין חששות מרכזיים.</li>';
@@ -791,15 +847,24 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
             const participantElement = document.querySelector('#section-participants-roles .section-content');
             if (data.participantInfo) {
                 let participantHTML = '<ul>';
-                if (data.participantInfo.participant1Name) { // Assuming internal call structure
+                // Handle both internal and external call participant structures
+                if (data.participantInfo.participant1Name) { 
                     participantHTML += `<li><strong>${data.participantInfo.participant1Name}:</strong> ${data.participantInfo.participant1Role || 'לא צוין תפקיד'}</li>`;
+                    if (data.participantInfo.participant2Name) {
+                        participantHTML += `<li><strong>${data.participantInfo.participant2Name}:</strong> ${data.participantInfo.participant2Role || 'לא צוין תפקיד'}</li>`;
+                    }
+                } else if (data.participantInfo.companyRepresentatives) {
+                    data.participantInfo.companyRepresentatives.forEach(rep => {
+                        participantHTML += `<li><strong>נציג חברה: ${rep.name || ''}</strong> (${rep.role || 'לא צוין תפקיד'})</li>`;
+                    });
+                     if (data.participantInfo.clientExternalInfo) {
+                        const client = data.participantInfo.clientExternalInfo;
+                        participantHTML += `<li><strong>לקוח/גורם חיצוני: ${client.name || ''}</strong> (${client.company || ''}, ${client.role || ''})</li>`;
+                        if(client.needs) participantHTML += `<li><strong>צרכים עיקריים:</strong> ${client.needs}</li>`;
+                    }
                 }
-                if (data.participantInfo.participant2Name) {
-                    participantHTML += `<li><strong>${data.participantInfo.participant2Name}:</strong> ${data.participantInfo.participant2Role || 'לא צוין תפקיד'}</li>`;
-                }
-                // Add more participants if structure allows
                 participantHTML += '</ul>';
-                participantElement.innerHTML = participantHTML;
+                participantElement.innerHTML = participantHTML.includes('<li>') ? participantHTML : '<p class="text-gray-500 italic">פרטי משתתפים לא זמינים.</p>';
             } else {
                 participantElement.innerHTML = '<p class="text-gray-500 italic">פרטי משתתפים לא זמינים.</p>';
             }
@@ -832,17 +897,15 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 aiNotesElement.innerHTML = '<p class="text-gray-500 italic">אין הערות AI.</p>';
             }
             
-            // Clear calendar and context for new report
             document.getElementById('calendar-suggestions-content').innerHTML = '<p class="text-gray-500 italic">הצעות ליומן יופיעו כאן...</p>';
             document.getElementById('additionalContextInput').value = '';
             document.getElementById('reevaluation-status').textContent = '';
 
-
-            // Update CSV data points (simplified for this example, would need more robust mapping)
-            // This is a placeholder; a full mapping from analysisData to csvDataPoints is needed.
-            csvDataPoints.length = 1; // Clear existing data except header
+            csvDataPoints.length = 1; 
             if(data.executiveSummary) csvDataPoints.push(["סיכום מנהלים", data.executiveSummary.mainPurpose || ""]);
-            // ... add more data points from analysisData to csvDataPoints
+             if(data.actionItems && data.actionItems.forAharon) data.actionItems.forAharon.forEach(task => csvDataPoints.push(["משימה לאהרון", task.taskDescription]));
+            if(data.actionItems && data.actionItems.forKalmanDev) data.actionItems.forKalmanDev.forEach(task => csvDataPoints.push(["משימה לקלמן/צוות", task.taskDescription]));
+            // Add more specific CSV data points as needed
         }
 
 
@@ -875,9 +938,13 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
             }
         }
 
-        async function callGeminiAPI(prompt, isJsonOutput = false) { // Added isJsonOutput flag
+        async function callGeminiAPI(prompt, isJsonOutput = false) { 
             if (!geminiApiKey) {
-                alert("מפתח Gemini API לא הוגדר. אנא הזן אותו באזור ההגדרות.");
+                // alert("מפתח Gemini API לא הוגדר. אנא הזן אותו באזור ההגדרות.");
+                openModal("שגיאת מפתח API");
+                geminiLoadingIndicator.style.display = 'none';
+                geminiError.textContent = "מפתח Gemini API לא הוגדר. אנא הזן אותו באזור ההגדרות של הדף.";
+                geminiError.style.display = 'block';
                 return Promise.reject("API Key not set");
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
@@ -907,7 +974,7 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 if (result.candidates && result.candidates.length > 0 &&
                     result.candidates[0].content && result.candidates[0].content.parts &&
                     result.candidates[0].content.parts.length > 0) {
-                    return result.candidates[0].content.parts[0].text; // This will be JSON string if isJsonOutput was true
+                    return result.candidates[0].content.parts[0].text; 
                 } else {
                     console.error('Unexpected Gemini API response structure:', result);
                     throw new Error('תוכן לא התקבל מה-API.');
@@ -921,7 +988,7 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
         async function generateEmailDraft(buttonElement) {
             const taskItem = buttonElement.closest('li');
             const taskContext = taskItem.dataset.taskContext || taskItem.textContent.split('.')[0].trim(); 
-            const callSummaryElement = document.querySelector('#section-summary .section-content p');
+            const callSummaryElement = document.querySelector('#section-summary .section-content p'); // Get first p for summary
             const callSummary = callSummaryElement ? callSummaryElement.textContent : "לא סופק סיכום שיחה עדיין.";
             const productName = "המוצר שלנו לתמלול וניהול שיחות חכם"; 
             const userProvidedContext = additionalContextInput.value.trim();
@@ -1090,10 +1157,11 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 החזר מערך של אובייקטים כאלה בפורמט JSON. הקפד על תקינות ה-JSON. אם אין משימות רלוונטיות לתזמון, החזר מערך JSON ריק.
             `;
             
+            let jsonStringForParsing = "";
             try {
-                const jsonString = await callGeminiAPI(prompt, true); // Request JSON output
+                jsonStringForParsing = await callGeminiAPI(prompt, true); // Request JSON output
                 calendarSuggestionsContent.innerHTML = ''; // Clear loading
-                const suggestionsArray = JSON.parse(jsonString); 
+                const suggestionsArray = JSON.parse(jsonStringForParsing); 
 
                 if (Array.isArray(suggestionsArray) && suggestionsArray.length > 0) {
                     suggestionsArray.forEach(event => {
@@ -1135,7 +1203,8 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                 }
             } catch (error) {
                 console.error("Error in getCalendarSuggestions:", error);
-                calendarSuggestionsContent.innerHTML = `<p class="text-red-500">אירעה שגיאה בקבלת הצעות תזמון: ${error.message}</p>`;
+                console.error("Problematic JSON string for calendar suggestions:", jsonStringForParsing);
+                calendarSuggestionsContent.innerHTML = `<p class="text-red-500">אירעה שגיאה בקבלת הצעות תזמון: ${error.message}. בדוק את הקונסול.</p>`;
             }
         }
 
@@ -1151,7 +1220,6 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
             reevaluationStatus.textContent = "מעדכן ניתוח...";
             reevaluationStatus.className = "mt-3 text-sm text-blue-600";
             
-            // Gather current state of the report to provide as context for re-evaluation
             const currentReportState = {
                 executiveSummary: document.querySelector('#section-summary .section-content').innerHTML,
                 aharonTasks: Array.from(document.querySelectorAll('#aharon-tasks li')).map(li => li.textContent.split('<button')[0].trim()),
@@ -1191,25 +1259,13 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
                     "forKalmanDev": [ { "taskDescription": "...", ... } ]
                   }
                 }
+                ודא שה-JSON תקין לחלוטין, ללא שגיאות תחביר כמו פסיקים מיותרים.
             `;
-
+            let jsonResponseForReval = "";
             try {
-                const jsonResponse = await callGeminiAPI(prompt, true); // Expecting JSON
-                const updatedData = JSON.parse(jsonResponse);
+                jsonResponseForReval = await callGeminiAPI(prompt, true); 
+                const updatedData = JSON.parse(jsonResponseForReval);
 
-                if (updatedData.executiveSummary) {
-                    populateReportWithData({ executiveSummary: updatedData.executiveSummary }); // Populate only summary part
-                }
-                if (updatedData.actionItems) {
-                    populateReportWithData({ actionItems: updatedData.actionItems }); // Populate only action items part
-                }
-                
-                // A more robust populateReportWithData would handle partial updates.
-                // For now, we are re-populating specific sections based on what AI returns.
-                // If AI returns full structure, the existing populateReportWithData can be used.
-                // But the prompt asks for specific parts.
-
-                // Let's refine how we update based on the specific prompt structure
                 if (updatedData.executiveSummary) {
                     const es = updatedData.executiveSummary;
                     let summaryHTML = `<p class="mb-2"><strong>סוג שיחה:</strong> ${es.callType || 'לא צוין'}</p>`;
@@ -1236,8 +1292,10 @@ Example for peopleMentionedTable object: {"nameEntity": "שימי", "roleContext
 
 
             } catch (error) {
+                console.error("Error re-evaluating analysis:", error);
+                console.error("Problematic JSON string for re-evaluation:", jsonResponseForReval);
                 geminiResponseContent.textContent = '';
-                geminiError.textContent = `אירעה שגיאה בעדכון הניתוח: ${error.message}`;
+                geminiError.textContent = `אירעה שגיאה בעדכון הניתוח: ${error.message}. בדוק קונסול.`;
                 geminiError.style.display = 'block';
                 reevaluationStatus.textContent = "שגיאה בעדכון הניתוח.";
                 reevaluationStatus.className = "mt-3 text-sm text-red-600";
